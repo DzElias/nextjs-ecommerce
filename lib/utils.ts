@@ -1,82 +1,66 @@
-import { ReadonlyURLSearchParams } from 'next/navigation';
-import { isArray, isObject } from './type-guards';
+import { clsx, type ClassValue } from 'clsx';
+import type { ReadonlyURLSearchParams } from 'next/navigation';
+import { twMerge } from 'tailwind-merge';
 
-export const createUrl = (pathname: string, params: URLSearchParams | ReadonlyURLSearchParams) => {
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+export function ensureStartsWith(str: string, prefix: string) {
+  if (!str.startsWith(prefix)) {
+    return prefix + str;
+  }
+  return str;
+}
+
+export function formatPrice(
+  price: string | number,
+  options: { currency?: string; notation?: Intl.NumberFormatOptions['notation'] } = {}
+) {
+  const { currency = 'PYG', notation = 'standard' } = options;
+
+  const numericPrice = typeof price === 'string' ? Number.parseFloat(price) : price;
+
+  return new Intl.NumberFormat('es-PY', {
+    style: 'currency',
+    currency,
+    notation,
+    maximumFractionDigits: 0
+  }).format(numericPrice);
+}
+
+export function createCheckoutProceess(data: any) {
+  if (typeof window !== 'undefined') {
+    const checkoutData = getLocalStorage('checkout_data', true) || {};
+    setLocalStorage('checkout_data', { ...checkoutData, ...data });
+  }
+}
+
+export function setLocalStorage(key: string, value: any) {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(key, JSON.stringify(value));
+  }
+}
+
+export function getLocalStorage(key: string, parse = false) {
+  if (typeof window !== 'undefined') {
+    const value = localStorage.getItem(key);
+    if (value) {
+      return parse ? JSON.parse(value) : value;
+    }
+  }
+  return null;
+}
+
+export function removeFromLocalStorage(key: string) {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(key);
+  }
+}
+
+export function createUrl(pathname: string, params: URLSearchParams | ReadonlyURLSearchParams) {
   const paramsString = params.toString();
   const queryString = `${paramsString.length ? '?' : ''}${paramsString}`;
 
   return `${pathname}${queryString}`;
-};
-
-export const ensureStartsWith = (stringToCheck: string, startsWith: string) =>
-  stringToCheck.startsWith(startsWith) ? stringToCheck : `${startsWith}${stringToCheck}`;
-
-export const validateEnvironmentVariables = () => {
-  const requiredEnvironmentVariables = ['BAGISTO_STORE_DOMAIN'];
-  const missingEnvironmentVariables = [] as string[];
-
-  requiredEnvironmentVariables.forEach((envVar) => {
-    if (!process.env[envVar]) {
-      missingEnvironmentVariables.push(envVar);
-    }
-  });
-
-  if (missingEnvironmentVariables.length) {
-    throw new Error(
-      `The following environment variables are missing. Your site will not work without them. Read more: https://vercel.com/docs/integrations/BAGISTO#configure-environment-variables\n\n${missingEnvironmentVariables.join(
-        '\n'
-      )}\n`
-    );
-  }
-
-  if (
-    process.env.BAGISTO_STORE_DOMAIN?.includes('[') ||
-    process.env.BAGISTO_STORE_DOMAIN?.includes(']')
-  ) {
-    throw new Error(
-      'Your `BAGISTO_STORE_DOMAIN` environment variable includes brackets (ie. `[` and / or `]`). Your site will not work with them there. Please remove them.'
-    );
-  }
-};
-
-export const setLocalStorage = (key: string, data: any) => {
-  if (typeof window !== 'undefined') {
-    if (isArray(data) || isObject(data)) {
-      data = JSON.stringify(data);
-    }
-    if (typeof data === 'string') {
-      localStorage.setItem(key, data);
-    }
-  }
-};
-
-export const getLocalStorage = (key: string | any, needParsedData = false) => {
-  if (typeof window !== 'undefined') {
-    const data = localStorage.getItem(key);
-    if (!data || typeof data === 'undefined') return null;
-    if (needParsedData) return JSON.parse(data);
-    return data;
-  }
-};
-
-export const createCheckoutProceess = (responseValues: object) => {
-  const getShippingAddress = getLocalStorage('checkout_data', true);
-  if (localStorage.getItem('checkout_data') === null) {
-    setLocalStorage('checkout_data', { ...responseValues });
-  }
-  if (isObject(getShippingAddress) && localStorage.getItem('checkout_data') !== null) {
-    setLocalStorage('checkout_data', { ...getShippingAddress, ...responseValues });
-  }
-};
-
-/**
- * Remove data from local storage
- *
- * @param {string} storageKey - Key for the storage
- * @returns void
- */
-export const removeFromLocalStorage = (storageKey: string | any) => {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem(storageKey);
-  }
-};
+}

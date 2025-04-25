@@ -1,35 +1,35 @@
 import Cart from 'components/cart';
-import Link from 'next/link';
-import DropdownMenu from './DropdownMenu';
 import Logo from './Logo';
-import menuData from './menuData';
+import NavbarScroll from './navbar-scroll';
 import Search from './search';
 
-export default function Navbar() {
+export default async function Navbar() {
   return (
-    <nav className="bg-purple-900 text-white p-4">
-      <div className="container mx-auto flex justify-between items-center">
-        {/* Logo */}
-        <Link href="/" className="flex items-center space-x-2">
-          <Logo />
-        </Link>
+    <>
+      {/* Navbar fijo */}
+      <nav
+        className="fixed left-0 right-0 top-0 z-50 bg-gradient-to-r from-purple-800 via-purple-700 to-purple-900 px-6 py-4 text-white shadow-lg transition-shadow duration-300"
+        id="main-navbar"
+      >
+        <div className="container mx-auto flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center space-x-6">
+            <Logo />
+          </div>
 
-        {/* Menú principal */}
-        <ul className="hidden md:flex space-x-6 text-sm font-medium">
-          {menuData.map((menu) => (
-            <li key={menu.title} className="relative group">
-              <span className="cursor-pointer hover:text-gray-300">{menu.title}</span>
-              {menu.subcategories && <DropdownMenu items={menu.subcategories} />}
-            </li>
-          ))}
-        </ul>
-
-        {/* Área de búsqueda y carrito */}
-        <div className="flex items-center space-x-4">
-          <Search />
-          <Cart />
+          {/* Área de búsqueda y carrito */}
+          <div className="flex items-center space-x-6">
+            <Search />
+            <Cart />
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      {/* Espacio para compensar el navbar fijo */}
+      <div className="h-20"></div>
+
+      {/* Script para manejar el comportamiento de desplazamiento */}
+      <NavbarScroll />
+    </>
   );
 }

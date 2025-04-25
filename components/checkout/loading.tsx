@@ -1,21 +1,43 @@
-const Loading = () => {
+export default function Loading() {
   return (
-    <section className="mr-auto hidden h-full w-full max-w-xl flex-col px-4 pt-4 lg:flex lg:max-w-xl">
-      <div role="status" className="my-12 flex w-full animate-pulse flex-col gap-4">
-        <div className=" h-24 w-full rounded-md bg-gray-200 dark:bg-gray-700"></div>
-        <div className=" h-8 w-3/4 rounded-md bg-gray-200 dark:bg-gray-700"></div>
-        <div className=" h-8 w-full rounded-md bg-gray-200 dark:bg-gray-700"></div>
-        <span className="sr-only">Loading...</span>
-      </div>
-      <div className="flex w-full animate-pulse flex-col gap-3">
-        {Array(3)
-          .fill(0)
-          .map((_, index) => (
-            <div key={index} className="h-8 w-auto rounded-md bg-gray-200 dark:bg-gray-700"></div>
+    <div className="flex h-full flex-col justify-between p-6">
+      <div className="flex-1">
+        <div className="flex items-center justify-between">
+          <div className="h-6 w-24 animate-pulse rounded bg-gray-200"></div>
+          <div className="h-4 w-16 animate-pulse rounded bg-gray-200"></div>
+        </div>
+        <div className="mt-6 space-y-6">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex gap-4">
+              <div className="h-16 w-16 animate-pulse rounded-md bg-gray-200"></div>
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200"></div>
+                <div className="h-4 w-1/2 animate-pulse rounded bg-gray-200"></div>
+                <div className="flex justify-between">
+                  <div className="h-6 w-20 animate-pulse rounded-full bg-gray-200"></div>
+                  <div className="h-6 w-6 animate-pulse rounded-full bg-gray-200"></div>
+                </div>
+              </div>
+            </div>
           ))}
+        </div>
       </div>
-    </section>
+      <div className="mt-8 space-y-4">
+        <div className="h-px w-full animate-pulse bg-gray-200"></div>
+        <div className="space-y-2">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="flex justify-between">
+              <div className="h-4 w-20 animate-pulse rounded bg-gray-200"></div>
+              <div className="h-4 w-16 animate-pulse rounded bg-gray-200"></div>
+            </div>
+          ))}
+          <div className="h-px w-full animate-pulse bg-gray-200"></div>
+          <div className="flex justify-between">
+            <div className="h-5 w-16 animate-pulse rounded bg-gray-200"></div>
+            <div className="h-5 w-20 animate-pulse rounded bg-gray-200"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
-};
-
-export default Loading;
+}

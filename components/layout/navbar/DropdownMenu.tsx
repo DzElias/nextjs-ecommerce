@@ -6,16 +6,20 @@ interface DropdownMenuProps {
 
 export default function DropdownMenu({ items }: DropdownMenuProps) {
   return (
-    <div className="relative group">
-      {/* Botón del dropdown */}
-      
-
+    <div className="group relative">
       {/* Contenedor del menú */}
-      <ul className="absolute top-full left-0 w-48 bg-white shadow-lg rounded-md opacity-0 invisible pointer-events-none 
-                     group-hover:opacity-100 group-hover:visible group-hover:pointer-events-auto transition-opacity duration-200">
+      <ul
+        className="pointer-events-none invisible absolute left-0 top-full z-50 mt-1 w-56 transform 
+                   overflow-hidden rounded-lg border border-purple-100
+                   bg-white opacity-0 shadow-xl transition-all duration-200
+                   ease-out group-hover:pointer-events-auto group-hover:visible group-hover:translate-y-1 group-hover:opacity-100"
+      >
         {items.map((item) => (
-          <li key={item.path} className="px-4 py-2 hover:bg-gray-200 cursor-pointer">
-            <Link href={`/search?category=${encodeURIComponent(item.title)}`} className="text-gray-800 no-underline hover:text-purple-600 block">
+          <li key={item.path} className="border-b border-purple-50 last:border-b-0">
+            <Link
+              href={item.path}
+              className="block px-5 py-3 text-sm text-gray-700 no-underline transition-colors duration-150 hover:bg-purple-50 hover:text-purple-700"
+            >
               {item.title}
             </Link>
           </li>

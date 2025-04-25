@@ -2,8 +2,7 @@ import { BAGISTO_GRAPHQL_API_ENDPOINT, CHECKOUT, HIDDEN_PRODUCT_TAG, TAGS } from
 import { isBagistoError, isObject } from 'lib/type-guards';
 import { ensureStartsWith } from 'lib/utils';
 import { revalidateTag } from 'next/cache';
-import { cookies, headers } from 'next/headers';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import {
   addToCartMutation,
   createCartMutation,
@@ -17,15 +16,11 @@ import { addShippingMethodMutation } from './mutations/shipping-method';
 import { getCartQuery } from './queries/cart';
 import { getChannelQuery } from './queries/channel';
 import { getCollectionProductsQuery } from './queries/collection';
+import { getFilterAttribute } from './queries/filterAttribute';
 import { getMenuQuery } from './queries/menu';
-import {
-  getCountryQuery,
-  getPageQuery,
-  getPagesQuery,
-  getThemeCustomizationQuery
-} from './queries/page';
+import { getCountryQuery, getPageQuery, getPagesQuery } from './queries/page';
 import { getShippingMethodQuery } from './queries/shipping-method';
-import {
+import type {
   BagistoAddToCartOperation,
   BagistoCart,
   BagistoCartOperation,
@@ -37,17 +32,18 @@ import {
   BagistoCollectionsOperation,
   BagistoCountriesOperation,
   BagistoCreateCartOperation,
+  BagistoFilterAttributeOperation,
   BagistoMenuOperation,
   BagistoPageOperation,
   BagistoPagesOperation,
   BagistoPaymentDataType,
   BagistoProductInfo,
   BagistoRemoveFromCartOperation,
-  BagistoThemeCustomization,
   BagistoUpdateCartOperation,
   Cart,
   ChannelType,
   CountryArrayDataType,
+  FilterAttribute,
   FilterCmsPageTranslationInput,
   ImageInfo,
   Menu,
@@ -55,8 +51,7 @@ import {
   Product,
   SEO,
   ShippingArrayDataType,
-  SuperAttribute,
-  ThemeCustomization
+  SuperAttribute
 } from './types';
 
 const domain = process.env.BAGISTO_STORE_DOMAIN
@@ -66,6 +61,7 @@ const endpoint = `${domain}${BAGISTO_GRAPHQL_API_ENDPOINT}`;
 // const key = process.env.BAGISTO_STOREFRONT_ACCESS_TOKEN!;
 
 type ExtractVariables<T> = T extends { variables: object } ? T['variables'] : never;
+
 export async function bagistoFetch<T>({
   cache = 'force-cache',
   headers,
@@ -83,9 +79,11 @@ export async function bagistoFetch<T>({
 }): Promise<{ status: number; body: T } | never> {
   try {
     let bagistoCartId;
-    if (cartId) {
+    if (cartId && typeof window === 'undefined') {
+      const { cookies } = await import('next/headers');
       bagistoCartId = cookies().get('bagisto_session')?.value;
     }
+
     const result = await fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -170,15 +168,11 @@ const reshapeShippingAddress = (payments: any): any => {
   return paymentMethods;
 };
 
-
-
-
-
 const reshapeImages = (images: Array<ImageInfo>, productTitle: string) => {
   const flattened = removeEdgesAndNodes(images);
 
   return flattened.map((image) => {
-    const filename = image?.url.match(/.*\/(.*)\..*/)[1];
+    const filename = image?.url.match(/.*\/(.*)\..*/)?.[1] || '';
     return {
       ...image,
       altText: image?.altText || `${productTitle} - ${filename}`
@@ -186,7 +180,7 @@ const reshapeImages = (images: Array<ImageInfo>, productTitle: string) => {
   });
 };
 
-const reshapeProduct = (product: BagistoProductInfo, filterHiddenProducts: boolean = true) => {
+const reshapeProduct = (product: BagistoProductInfo, filterHiddenProducts = true) => {
   if (!product || (filterHiddenProducts && product.tags?.includes(HIDDEN_PRODUCT_TAG))) {
     return undefined;
   }
@@ -215,6 +209,16 @@ const reshapeProducts = (products: BagistoProductInfo[]) => {
 
   return reshapedProducts;
 };
+
+export async function getFilterAttributes(): Promise<FilterAttribute> {
+  const res = await bagistoFetch<BagistoFilterAttributeOperation>({
+    query: getFilterAttribute,
+    tags: [TAGS.filters],
+    cache: 'no-store'
+  });
+
+  return res.body.data.getFilterAttribute;
+}
 
 export async function createCart(): Promise<Cart> {
   const res = await bagistoFetch<BagistoCreateCartOperation>({
@@ -316,18 +320,43 @@ export async function updateCart(qty: { cartItemId: number; quantity: number }[]
   return reshapeCart(res.body.data.updateItemToCart.cart);
 }
 
+// Modificar la función getCart para asegurar que devuelva datos correctos
 export async function getCart(cartId?: string): Promise<Cart | undefined> {
-  const res = await bagistoFetch<BagistoCartOperation>({
-    query: getCartQuery,
-    tags: [TAGS.cart],
-    cache: 'no-store'
-  });
+  try {
+    const res = await bagistoFetch<BagistoCartOperation>({
+      query: getCartQuery,
+      tags: [TAGS.cart],
+      cache: 'no-store'
+    });
 
-  // Old carts becomes `null` when you checkout.
-  if (!res.body.data.cartDetail) {
+    // Verificar si hay datos en la respuesta
+    if (!res.body.data.cartDetail) {
+      console.log('No cart data found, creating new cart');
+      // Si no hay carrito, intentar crear uno nuevo
+      try {
+        const newCart = await createCart();
+        return newCart;
+      } catch (createError) {
+        console.error('Error creating new cart:', createError);
+        return undefined;
+      }
+    }
+
+    // Transformar los datos del carrito
+    const cartData = reshapeCart(res.body.data.cartDetail);
+
+    // Log para depuración
+    console.log('Cart data processed:', {
+      id: cartData.id,
+      itemsCount: cartData.itemsCount,
+      linesCount: cartData.lines?.length || 0
+    });
+
+    return cartData;
+  } catch (error) {
+    console.error('Error fetching cart:', error);
     return undefined;
   }
-  return reshapeCart(res.body.data.cartDetail);
 }
 
 export async function getCollection(handle: string): Promise<Product[] | undefined> {
@@ -348,12 +377,14 @@ export async function getCollectionProducts({
   collection,
   reverse,
   sortKey,
-  page
+  page,
+  filters = []
 }: {
   collection: string;
   reverse?: boolean;
   sortKey?: string;
   page?: string;
+  filters?: { key: string; value: string }[];
 }): Promise<Product[]> {
   let input = [{ key: 'limit', value: '100' }];
 
@@ -367,6 +398,12 @@ export async function getCollectionProducts({
   if (collection && page === 'product') {
     input = [{ key: 'url_key', value: collection }, ...input];
   }
+
+  // Add filters to the input
+  if (filters && filters.length > 0) {
+    input = [...filters, ...input];
+  }
+
   const res = await bagistoFetch<BagistoCollectionProductsOperation>({
     query: getCollectionProductsQuery,
     tags: [TAGS.collections, TAGS.products],
@@ -382,8 +419,7 @@ export async function getCollectionProducts({
   return reshapeProducts(res.body.data.allProducts.data);
 }
 
-
-
+// Añadir código de depuración para ver la estructura de las categorías
 export async function getHomeCategories(): Promise<BagistoCollection[]> {
   const res = await bagistoFetch<BagistoCollectionsOperation>({
     query: getMenuQuery,
@@ -391,9 +427,15 @@ export async function getHomeCategories(): Promise<BagistoCollection[]> {
     cartId: false
   });
 
-  return (
+  // Depuración: Imprimir la respuesta completa
+  console.log(
+    'API Response for categories:',
+    JSON.stringify(res.body?.data?.homeCategories, null, 2)
+  );
+
+  const categories =
     res.body?.data?.homeCategories?.map(
-      (item: { 
+      (item: {
         title: string;
         description: string;
         seo: SEO;
@@ -401,33 +443,35 @@ export async function getHomeCategories(): Promise<BagistoCollection[]> {
         updatedAt: string;
         name: string;
         parentId: string;
-        id: string; 
+        id: string;
+        categoryId: string;
         slug: string;
         handle: string;
         logoPath: string;
-      
       }) => ({
         title: item.name,
-        description: item.description,
-        seo: item.seo,
-        updatedAt: item.updatedAt,
-        handle: item.handle,
-        slug: item.slug,
+        description: item.description || '',
+        seo: item.seo || { title: '', description: '' },
+        updatedAt: item.updatedAt || '',
+        handle: item.handle || '',
+        slug: item.slug || '',
         name: item.name,
-        
         id: item.id,
-
-        parentId: item.parentId, 
-        
-        path: `/search/${item.slug
+        // Usar el id como categoryId si no existe
+        categoryId: item.categoryId || item.id,
+        parentId: item.parentId || '',
+        path: `/search/${(item.slug || '')
           .replace(domain, '')
           .replace('/collections', '/search')
           .replace('/pages', '/search')}`,
-          logoPath: item.logoPath
+        logoPath: item.logoPath || ''
       })
-    ) || []
-  );
-  
+    ) || [];
+
+  // Depuración: Imprimir las categorías procesadas
+  console.log('Processed categories:', JSON.stringify(categories, null, 2));
+
+  return categories;
 }
 
 export async function getMenu(handle: string): Promise<Menu[]> {
@@ -454,18 +498,6 @@ export async function getMenu(handle: string): Promise<Menu[]> {
   );
 }
 
-
-export async function getThemeCustomization(handle: string): Promise<ThemeCustomization[]> {
-  const res = await bagistoFetch<BagistoThemeCustomization>({
-    query: getThemeCustomizationQuery,
-    tags: [TAGS.collections],
-    variables: {
-      handle
-    }
-  });
-  return res.body?.data?.themeCustomization?.filter((item) => item?.type === 'footer_links') || [];
-}
-
 export async function getPage(input: FilterCmsPageTranslationInput): Promise<Page> {
   const res = await bagistoFetch<BagistoPageOperation>({
     query: getPageQuery,
@@ -486,11 +518,13 @@ export async function getPages(): Promise<Page> {
 export async function getProducts({
   query,
   reverse,
-  sortKey
+  sortKey,
+  filters = []
 }: {
   query?: string;
   reverse?: boolean;
   sortKey?: string;
+  filters?: { key: string; value: string }[];
 }): Promise<Product[]> {
   let input = [{ key: 'limit', value: '100' }];
   if (sortKey) {
@@ -501,6 +535,11 @@ export async function getProducts({
     input = [{ key: 'name', value: query }, ...input];
   }
 
+  // Add filters to the input
+  if (filters && filters.length > 0) {
+    input = [...filters, ...input];
+  }
+
   const res = await bagistoFetch<BagistoCollectionProductsOperation>({
     query: getCollectionProductsQuery,
     tags: [TAGS.products],
@@ -509,7 +548,6 @@ export async function getProducts({
       input
     }
   });
-
 
   return reshapeProducts(res.body.data.allProducts.data);
 }
@@ -540,7 +578,13 @@ export async function revalidate(req: NextRequest): Promise<NextResponse> {
   // otherwise it will continue to retry the request.
   const collectionWebhooks = ['collections/create', 'collections/delete', 'collections/update'];
   const productWebhooks = ['products/create', 'products/delete', 'products/update'];
-  const topic = headers().get('x-bagisto-topic') || 'unknown';
+
+  let topic = 'unknown';
+  if (typeof window === 'undefined') {
+    const { headers } = await import('next/headers');
+    topic = headers().get('x-bagisto-topic') || 'unknown';
+  }
+
   const secret = req.nextUrl.searchParams.get('secret');
   const isCollectionUpdate = collectionWebhooks.includes(topic);
   const isProductUpdate = productWebhooks.includes(topic);
@@ -563,4 +607,41 @@ export async function revalidate(req: NextRequest): Promise<NextResponse> {
   }
 
   return NextResponse.json({ status: 200, revalidated: true, now: Date.now() });
+}
+
+// Add this function to fetch categories
+export async function getCategories(): Promise<any[]> {
+  try {
+    // Get the base URL from environment variables or use a default for development
+    const baseUrl =
+      process.env.NEXT_PUBLIC_API_URL || process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : 'http://localhost:3000';
+
+    // Construct the full URL
+    const apiUrl = new URL('/api/categories', baseUrl).toString();
+
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error fetching categories: ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to fetch categories');
+    }
+
+    return result.data || [];
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    return [];
+  }
 }

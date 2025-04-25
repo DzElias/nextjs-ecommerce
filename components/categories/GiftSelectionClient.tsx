@@ -1,46 +1,87 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import "swiper/css";
-import "swiper/css/pagination";
-import { Pagination } from "swiper/modules";
-import { Swiper, SwiperSlide } from "swiper/react";
+import Image from 'next/image';
+import Link from 'next/link';
+import 'swiper/css';
+import 'swiper/css/pagination';
+import { Pagination } from 'swiper/modules';
+import { Swiper, SwiperSlide } from 'swiper/react';
 
-export default function GiftSelectionClient({ categories }: { categories: any[] }) {
+// Opciones estáticas para filtrar en la búsqueda
+const staticCategories = [
+  {
+    id: '1',
+    name: 'Hombre',
+    path: '#', // Se actualizará posteriormente
+    logoPath: '/images/hombre.jpg'
+  },
+  {
+    id: '2',
+    name: 'Mujer',
+    path: '#', // Se actualizará posteriormente
+    logoPath: '/images/mujer.jpg'
+  },
+  {
+    id: '3',
+    name: 'Niño',
+    path: '#', // Se actualizará posteriormente
+    logoPath: '/images/nino.jpg'
+  },
+  {
+    id: '4',
+    name: 'Niña',
+    path: '#', // Se actualizará posteriormente
+    logoPath: '/images/nina.jpg'
+  },
+  {
+    id: '5',
+    name: 'Adolescente',
+    path: '#', // Se actualizará posteriormente
+    logoPath: '/images/adolescente.jpg'
+  }
+];
+
+export default function GiftSelectionClient() {
   return (
-    <div className="max-w-3xl mx-auto p-6"> {/* Se redujo el ancho máximo de la fila */}
-      <h2 className="text-center text-lg font-semibold text-purple-600 dark:text-white">
-        ¿A quién quieres regalar?
-      </h2>
+    <div className="mx-auto max-w-5xl px-6 py-10">
+      <div className="mb-10 flex flex-col items-center">
+        <h2 className="relative text-center text-2xl font-bold text-purple-700 dark:text-white">
+          ¿A quién quieres regalar?
+          <span className="absolute bottom-0 left-1/2 -mb-2 h-0.5 w-32 -translate-x-1/2 transform bg-purple-400"></span>
+        </h2>
+      </div>
 
-      {/* Swiper con menor espacio entre imágenes y deslizador en móviles */}
       <Swiper
         modules={[Pagination]}
-        spaceBetween={5} // Reduce espacio entre imágenes
-        slidesPerView={5} // Muestra 5 en pantallas grandes
+        spaceBetween={20}
+        slidesPerView={4}
         breakpoints={{
-          320: { slidesPerView: 3 }, // 2 imágenes en móviles
-          640: { slidesPerView: 3 }, // 3 imágenes en tablets
-          1024: { slidesPerView: 5 }, // 5 imágenes en escritorio
+          320: { slidesPerView: 2, spaceBetween: 10 },
+          640: { slidesPerView: 3, spaceBetween: 15 },
+          1024: { slidesPerView: 5, spaceBetween: 20 }
         }}
-        pagination={{ clickable: true }}
-        className="mt-4 w-full"
+        pagination={{
+          clickable: true,
+          bulletActiveClass: 'swiper-pagination-bullet-active !bg-purple-600',
+          bulletClass: 'swiper-pagination-bullet !bg-purple-200 !opacity-70'
+        }}
+        className="mt-6 w-full pb-12"
       >
-        {categories.map((category) => (
-          <SwiperSlide key={category.id} className="flex justify-center">
+        {staticCategories.map((category) => (
+          <SwiperSlide key={category.id} className="flex justify-center py-4">
             <Link href={category.path} passHref>
-              <div className="relative w-[90px] md:w-[130px] rounded-lg overflow-hidden shadow-lg border border-gray-200 cursor-pointer hover:shadow-md transition duration-200">
-                {/* Imagen cuadrada */}
-                <div className="w-full aspect-square flex items-center justify-center bg-gray-300">
-                  <img
-                    src={category.logoPath}
+              <div className="group relative w-[120px] cursor-pointer overflow-hidden rounded-2xl bg-white transition-all duration-300 hover:shadow-lg md:w-[150px]">
+                <div className="flex aspect-square w-full items-center justify-center overflow-hidden bg-gray-50">
+                  <Image
+                    src={category.logoPath || '/placeholder.svg?height=150&width=150'}
                     alt={category.name}
-                    className="w-full h-auto object-contain"
+                    width={150}
+                    height={150}
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 </div>
 
-                {/* Título */}
-                <div className="text-center py-2 text-gray-600 dark:text-white font-medium">
+                <div className="bg-white px-2 py-3 text-center font-medium text-gray-800 transition-colors duration-300 group-hover:text-purple-700">
                   {category.name}
                 </div>
               </div>

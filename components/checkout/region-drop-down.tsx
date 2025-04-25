@@ -1,60 +1,82 @@
+'use client';
+
 import { Select, SelectItem } from '@nextui-org/react';
-import { useGlobalContext } from 'app/context/store';
-import clsx from 'clsx';
-import { CountryArrayDataType, StateArrayDataType } from 'lib/bagisto/types';
-import { isArray } from 'lib/type-guards';
-import InputText from './cart/input';
-export default function Selectbox({
-  className,
+import type { CountryArrayDataType } from 'lib/bagisto/types';
+import { useEffect, useState } from 'react';
+import { useFormStatus } from 'react-dom';
+
+export default function RegionDropDown({
   countries,
-  label,
+  defaultValue,
   errorMsg,
-  defaultValue
+  className,
+  label
 }: {
-  className: string;
-  label: string;
-  countries: any;
-  errorMsg?: string;
+  countries: CountryArrayDataType[];
   defaultValue?: string;
+  errorMsg?: string;
+  className?: string;
+  label: string;
 }) {
-  const { countryCode } = useGlobalContext();
-  const stateArray = countries.find(
-    (country: CountryArrayDataType) => country.code === countryCode
-  );
-  const countryStates = stateArray?.states;
-  return isArray(countryStates) ? (
-    <div className={clsx('w-full', className)}>
+  const { pending } = useFormStatus();
+  const [states, setStates] = useState<any[]>([]);
+  const [selectedCountry, setSelectedCountry] = useState<string>('');
+
+  useEffect(() => {
+    // Obtener el valor del país seleccionado del formulario
+    const countrySelect = document.querySelector('select[name="country"]') as HTMLSelectElement;
+    if (countrySelect) {
+      const countryValue = countrySelect.value;
+      setSelectedCountry(countryValue);
+
+      // Buscar el país seleccionado en la lista de países
+      const country = countries.find((c) => c.code === countryValue);
+      if (country && country.states) {
+        setStates(country.states);
+      } else {
+        setStates([]);
+      }
+    }
+
+    // Agregar un event listener para detectar cambios en el select de país
+    const handleCountryChange = () => {
+      const countryValue = countrySelect.value;
+      setSelectedCountry(countryValue);
+
+      // Buscar el país seleccionado en la lista de países
+      const country = countries.find((c) => c.code === countryValue);
+      if (country && country.states) {
+        setStates(country.states);
+      } else {
+        setStates([]);
+      }
+    };
+
+    countrySelect?.addEventListener('change', handleCountryChange);
+
+    return () => {
+      countrySelect?.removeEventListener('change', handleCountryChange);
+    };
+  }, [countries]);
+
+  return (
+    <div className={className}>
       <Select
-        items={countryStates}
-        label={label}
-        placeholder="Select State"
         name="state"
-        variant="bordered"
-        radius="sm"
-        defaultSelectedKeys={[defaultValue || 'AP']}
-        errorMessage={errorMsg && errorMsg}
+        label={label}
+        defaultSelectedKeys={defaultValue ? [defaultValue] : undefined}
+        isDisabled={states.length === 0 || pending}
         isInvalid={!!errorMsg}
-        className={clsx('w-full bg-transparent', className)}
-        autoFocus={false}
-        classNames={{
-          label: 'text-gray-500',
-          mainWrapper: 'border-none outline-none',
-          trigger: 'border border-[0.5px] rounded-md dark:border-gray-700',
-          popoverContent: 'bg-white dark:bg-black'
-        }}
+        errorMessage={errorMsg}
+        variant="bordered"
+        className="w-full"
       >
-        {(States: StateArrayDataType) => (
-          <SelectItem key={States.code}>{States.defaultName}</SelectItem>
-        )}
+        {states.map((state) => (
+          <SelectItem key={state.code} value={state.code}>
+            {state.defaultName}
+          </SelectItem>
+        ))}
       </Select>
     </div>
-  ) : (
-    <InputText
-      label={label}
-      name="state"
-      defaultValue={defaultValue}
-      errorMsg={errorMsg}
-      className={clsx('max-w-full bg-transparent', className)}
-    />
   );
 }

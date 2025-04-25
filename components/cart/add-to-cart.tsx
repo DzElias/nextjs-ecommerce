@@ -1,12 +1,14 @@
 'use client';
 
+import type React from 'react';
+
 import { PlusIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
-import { addItem } from 'components/cart/actions';
 import LoadingDots from 'components/loading-dots';
-import { ConfigurableProductData, ConfigurableProductIndexData } from 'lib/bagisto/types';
+import type { ConfigurableProductData, ConfigurableProductIndexData } from 'lib/bagisto/types';
 import { useSearchParams } from 'next/navigation';
 import { useFormState, useFormStatus } from 'react-dom';
+import { addItem } from './actions';
 
 function SubmitButton({
   availableForSale,
@@ -23,7 +25,7 @@ function SubmitButton({
   if (!availableForSale) {
     return (
       <button aria-disabled className={clsx(buttonClasses, disabledClasses)}>
-        Out Of Stock
+        Agotado
       </button>
     );
   }
@@ -31,14 +33,14 @@ function SubmitButton({
   if (!selectedVariantId) {
     return (
       <button
-        aria-label="Please select an option"
+        aria-label="Por favor selecciona una opción"
         aria-disabled
         className={clsx(buttonClasses, disabledClasses)}
       >
         <div className="absolute left-0 ml-4">
           <PlusIcon className="h-5" />
         </div>
-        Add To Cart
+        Agregar al Carrito
       </button>
     );
   }
@@ -48,7 +50,7 @@ function SubmitButton({
       onClick={(e: React.FormEvent<HTMLButtonElement>) => {
         if (pending) e.preventDefault();
       }}
-      aria-label="Add to cart"
+      aria-label="Agregar al carrito"
       aria-disabled={pending}
       className={clsx(buttonClasses, {
         'hover:opacity-90': true,
@@ -58,7 +60,7 @@ function SubmitButton({
       <div className="absolute left-0 ml-4">
         {pending ? <LoadingDots className="mb-3 bg-white" /> : <PlusIcon className="h-5" />}
       </div>
-      Add To Cart
+      Agregar al Carrito
     </button>
   );
 }
@@ -118,7 +120,7 @@ export function AddToCart({
   const matchingObject = findMatchingObject(searchParamsObject, index);
 
   const defaultVariantId = variants.length === 1 ? variants[0]?.id : productId;
-  // This coede checked configruable product is selected or not
+  // This code checked configruable product is selected or not
   const buttonStatus = variants.length > 1 ? (matchingObject?.id ? true : false) : true;
   const variant = variants.find((variant: ConfigurableProductData) =>
     variant.options.every((option) => option.id === searchParams.get(variant.code.toLowerCase()))

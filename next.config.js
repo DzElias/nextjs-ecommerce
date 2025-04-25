@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
-
 module.exports = {
   eslint: {
-    // Disabling on production builds because we're running checks on PRs via GitHub Actions.
     ignoreDuringBuilds: true
   },
   env: {
@@ -13,13 +11,15 @@ module.exports = {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
-        protocol: 'http', // Cambié https por http
+        protocol: 'http',
         hostname: '127.0.0.1',
-        pathname: '/s/files/**'
+        port: '8000', // Puerto de Bagisto
+        pathname: '/**' // Permite todas las rutas
       },
       {
-        protocol: 'http', // Cambié https por http
-        hostname: '127.0.0.1',
+        protocol: 'http',
+        hostname: '127.0.0.1', // También permitir si usas localhost
+        port: '8000',
         pathname: '/**'
       }
     ]

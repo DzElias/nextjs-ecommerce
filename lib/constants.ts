@@ -71,17 +71,20 @@ export const sorting: SortFilterItem[] = [
 export const TAGS = {
   collections: 'collections',
   products: 'products',
-  cart: 'cart'
+  cart: 'cart',
+  filters: 'filters' // Add this line
 };
 
 export const FILTER_ATTRIBUTE = {
   sorting: 'sortings'
 };
+
 export const CHECKOUT = {
   shipping: 'collections',
   method: 'products',
   cart: 'cart'
 };
+
 export const HIDDEN_PRODUCT_TAG = 'nextjs-frontend-hidden';
 export const DEFAULT_OPTION = 'Default Title';
 export const BAGISTO_GRAPHQL_API_ENDPOINT = '/graphql';

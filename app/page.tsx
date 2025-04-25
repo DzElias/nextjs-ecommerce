@@ -1,36 +1,33 @@
+import AiGiftAssistant from 'components/ai-gift-recommendation/aiGiftRecommendation';
+import GiftSelection from 'components/categories/GiftSelection';
+import { Featured } from 'components/featured';
+import { ThreeItemGrid } from 'components/grid/three-items';
+import HowItWorks from 'components/how-it-works';
+import Navbar from 'components/layout/navbar';
 
-import AiGiftAssistant from "components/ai-gift-recommendation/aiGiftRecommendation";
-import GiftSelection from "components/categories/GiftSelection";
-import { FeaturedHeader } from "components/featured-header/featured-header";
-import { ThreeItemGrid } from "components/grid/three-items";
-import Footer from "components/layout/footer";
-import Navbar from "components/layout/navbar";
-
-export const runtime = "edge";
+export const runtime = 'edge';
 
 export const metadata = {
-  description: "High-performance ecommerce store built with Next.js, Vercel, and Bagisto.",
+  description: 'High-performance ecommerce store built with Next.js, Vercel, and Bagisto.',
   openGraph: {
-    type: "website",
-  },
+    type: 'website'
+  }
 };
 
 export default async function HomePage() {
   const navbar = await Navbar();
   const threeItemGrid = await ThreeItemGrid();
   const giftSelection = await GiftSelection();
-  const footer = await Footer();
-  const featuredProducts = await FeaturedHeader();
-  const aiRecommendationGift = await AiGiftAssistant();
+  const aiRecommendationGift = AiGiftAssistant();
 
   return (
     <>
       {navbar}
       {aiRecommendationGift}
       {giftSelection}
-      {featuredProducts}
+      <Featured />
+      <HowItWorks />
       {threeItemGrid}
-      {footer}
     </>
   );
 }

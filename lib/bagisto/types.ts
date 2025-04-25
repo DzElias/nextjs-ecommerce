@@ -187,8 +187,6 @@ export type CartItem = {
   payment: selectedPaymentMethodType;
 };
 
-
-
 export type Image = {
   url: string;
   altText: string;
@@ -238,6 +236,9 @@ export type Page = {
 export type Product = Omit<BagistoProductInfo, 'variants' | 'images'> & {
   variants: ProductVariant[];
   images: ImageInfo[];
+  attributes?: {
+    [key: string]: string | string[];
+  };
 };
 
 export type ProductOption = {
@@ -347,6 +348,7 @@ export type BagistoCollection = {
   name: string;
   parentId: string;
   id: string;
+  categoryId: string; // Asegurarse de que este campo esté definido
   slug: string;
   logoPath: string;
 };
@@ -468,7 +470,7 @@ export type ConfigurableProductData = {
 
 export type ProductPrice = {
   value: number;
-  currencyCode?: 'USD' | 'EUR' | 'ARS' | string;
+  currencyCode?: 'USD' | 'EUR' | 'PYG' | string;
   retailPrice?: number;
   salePrice?: number;
   listPrice?: number;
@@ -805,4 +807,46 @@ export type BagistoProductsOperation = {
     reverse?: boolean;
     sortKey?: string;
   };
+};
+
+export type FilterAttribute = {
+  filterData: {
+    key: string;
+    value: string;
+  }[];
+  sortOrders: SortOrder[];
+};
+
+export type SortOrder = {
+  key: string;
+  title: string;
+  value: string;
+  sort: string;
+  order: string;
+  position: string;
+};
+
+export type BagistoFilterAttributeOperation = {
+  data: {
+    getFilterAttribute: FilterAttribute;
+  };
+};
+
+// Add new types for attributes
+export type AttributeOption = {
+  id: string;
+  code: string;
+  label: string;
+  value: string;
+  attributeId: string;
+};
+
+export type Attribute = {
+  id: string;
+  code: string;
+  name: string;
+  type: string;
+  isFilterable: boolean;
+  isVisibleOnFront: boolean;
+  options: AttributeOption[];
 };

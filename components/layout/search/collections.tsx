@@ -5,26 +5,26 @@ import { Suspense } from 'react';
 
 async function CollectionList() {
   const collections = await getMenu('header-menu');
-  
-  const mainCategories = collections.filter(category => category.parentId === "1");
+
+  const mainCategories = collections.filter((category) => category.parentId == '1');
 
   return (
-    <div className="space-y-4 w-full">
+    <div className="w-full space-y-4">
       <h2 className="text-lg font-semibold">Categorías</h2>
       <ul className="space-y-3">
-        {mainCategories.map(category => {
-          const subcategories = collections.filter(subCat => subCat.parentId == category.id);
+        {mainCategories.map((category) => {
+          const subcategories = collections.filter((subCat) => subCat.parentId == category.id);
 
           return (
             <li key={`main-${category.id}`} className="font-bold">
               <details className="group">
-                <summary className="flex justify-between w-full text-left cursor-pointer">
+                <summary className="flex w-full cursor-pointer justify-between text-left">
                   {category.title}
-                  <span className="group-open:rotate-180 transition-transform">▼</span>
+                  <span className="transition-transform group-open:rotate-180">▼</span>
                 </summary>
                 {subcategories.length > 0 && (
-                  <ul className="ml-4 space-y-2 text-sm flex flex-col">
-                    {subcategories.map(subcategory => (
+                  <ul className="ml-4 flex flex-col space-y-2 text-sm">
+                    {subcategories.map((subcategory) => (
                       <li key={`sub-${subcategory.id}`}>
                         <Link href={subcategory.path} className="text-gray-600 hover:no-underline">
                           {subcategory.title}

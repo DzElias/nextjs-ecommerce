@@ -1,10 +1,12 @@
 'use client';
 
+import type React from 'react';
+
 import { Radio, RadioGroup, cn } from '@nextui-org/react';
 import { ProceedToCheckout } from 'components/checkout/cart/proceed-to-checkout';
 import RightArrowIcon from 'components/icons/right-arrow';
 import WalletLogo from 'components/icons/wallet-logo';
-import { ShippingAddressDataType, selectedPaymentMethodType } from 'lib/bagisto/types';
+import type { ShippingAddressDataType, selectedPaymentMethodType } from 'lib/bagisto/types';
 import { isArray, isObject } from 'lib/type-guards';
 import { createCheckoutProceess, getLocalStorage } from 'lib/utils';
 import Link from 'next/link';
@@ -33,7 +35,7 @@ export default function PaymentPage({
   const initialState = {
     method: selectedPayment?.method || ''
   };
-  
+
   const [state, formAction] = useFormState(createPaymentMethod, initialState);
   useEffect(() => {
     if (isObject(state?.payment)) {
@@ -46,10 +48,10 @@ export default function PaymentPage({
     <div className="my-5 flex-col">
       <div className="relative my-4 rounded-lg border-[1px] border-solid px-3 dark:border-white/30">
         {isObject(shippingAddress) && (
-          <table className="w-full text-left text-sm text-gray-500 rtl:text-right dark:text-gray-400">
+          <table className="w-full text-left text-sm text-gray-500 dark:text-gray-400 rtl:text-right">
             <tbody>
               <tr className="border-b dark:border-gray-700">
-                <td className=" py-4">Contact</td>
+                <td className=" py-4">Contacto</td>
                 <th
                   scope="row"
                   className=" break-all px-6 py-4 font-medium text-gray-900 dark:text-white"
@@ -61,12 +63,12 @@ export default function PaymentPage({
                     href="/checkout/information"
                     className="font-medium text-purple-600 hover:underline dark:text-purple-500"
                   >
-                    Change
+                    Cambiar
                   </Link>
                 </td>
               </tr>
               <tr className="border-b dark:border-gray-700">
-                <td className=" py-4">Ship to</td>
+                <td className=" py-4">Enviar a</td>
                 <th
                   scope="row"
                   className="break-all px-6 py-4 font-medium text-gray-900 dark:text-white"
@@ -80,12 +82,12 @@ export default function PaymentPage({
                     href="/checkout/information"
                     className="font-medium text-purple-600 hover:underline dark:text-purple-500"
                   >
-                    Change
+                    Cambiar
                   </Link>
                 </td>
               </tr>
               <tr className="border-b dark:border-gray-700">
-                <td className=" py-4">Method</td>
+                <td className=" py-4">Método</td>
                 <th
                   scope="row"
                   className="break-all px-6 py-4 font-medium text-gray-900 dark:text-white"
@@ -97,7 +99,7 @@ export default function PaymentPage({
                     href="/checkout/shipping"
                     className="font-medium text-purple-600 hover:underline dark:text-purple-500"
                   >
-                    Change
+                    Cambiar
                   </Link>
                 </td>
               </tr>
@@ -106,7 +108,7 @@ export default function PaymentPage({
         )}
       </div>
       <div className="flex flex-col gap-6">
-        <h1 className="text-2xl font-bold ">Payment method</h1>
+        <h1 className="text-2xl font-bold ">Método de pago</h1>
         <form action={formAction}>
           <div className="flex flex-col gap-5">
             {isArray(methods) && (
@@ -128,23 +130,23 @@ export default function PaymentPage({
             <button className="flex items-center text-purple-600">
               <RightArrowIcon className="" />
               <Link href="/checkout/shipping" className=" mx-1 text-sm">
-                Return to Shipping
+                Volver a Envío
               </Link>
             </button>
             <div className="w-full sm:w-2/5">
-              <ProceedToCheckout buttonName="Pay Now" />
+              <ProceedToCheckout buttonName="Pagar Ahora" />
             </div>
           </div>
         </form>
       </div>
       {isArray(!methods) && (
         <div className="flex flex-col gap-2  ">
-          <h1 className="text-2xl font-bold ">Payment</h1>
-          <p className="text-neutral-500">All transactions are secure and encrypted.</p>
+          <h1 className="text-2xl font-bold ">Pago</h1>
+          <p className="text-neutral-500">Todas las transacciones son seguras y encriptadas.</p>
           <div className="flex h-32 flex-col items-center justify-center gap-2 rounded-sm bg-neutral-100 px-3">
             <WalletLogo className="text-neutral-400" />
             <p className="text-center text-neutral-500">
-              This store can’t accept payments right now.
+              Esta tienda no puede aceptar pagos en este momento.
             </p>
           </div>
         </div>

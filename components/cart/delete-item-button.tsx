@@ -2,10 +2,11 @@
 
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
-import { removeItem } from 'components/cart/actions';
 import LoadingDots from 'components/loading-dots';
 import type { CartItem } from 'lib/bagisto/types';
+import type React from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
+import { removeItem } from './actions';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -16,10 +17,10 @@ function SubmitButton() {
       onClick={(e: React.FormEvent<HTMLButtonElement>) => {
         if (pending) e.preventDefault();
       }}
-      aria-label="Remove cart item"
+      aria-label="Eliminar del carrito"
       aria-disabled={pending}
       className={clsx(
-        'ease flex h-[17px] w-[17px] items-center justify-center rounded-full bg-neutral-500 transition-all duration-200',
+        'ease flex h-[17px] w-[17px] items-center justify-center rounded-full bg-purple-600 shadow-md transition-all duration-200 hover:bg-purple-700',
         {
           'cursor-not-allowed px-0': pending
         }
@@ -28,7 +29,7 @@ function SubmitButton() {
       {pending ? (
         <LoadingDots className="bg-white" />
       ) : (
-        <XMarkIcon className="hover:text-accent-3 mx-[1px] h-4 w-4 text-white dark:text-black" />
+        <XMarkIcon className="mx-[1px] h-4 w-4 text-white" />
       )}
     </button>
   );

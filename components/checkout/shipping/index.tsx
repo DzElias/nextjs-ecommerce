@@ -1,7 +1,9 @@
 'use client';
 import { Radio, RadioGroup, cn } from '@nextui-org/react';
+import type React from 'react';
+
 import RightArrowIcon from 'components/icons/right-arrow';
-import { ShippingAddressDataType } from 'lib/bagisto/types';
+import type { ShippingAddressDataType } from 'lib/bagisto/types';
 import { isArray, isObject } from 'lib/type-guards';
 import { createCheckoutProceess } from 'lib/utils';
 import Link from 'next/link';
@@ -43,10 +45,10 @@ export default function ShippingMethod({
     <div className="my-6 flex flex-col gap-6">
       {isObject(shippingAddress) && (
         <div className="relative my-4 rounded-lg border-[1px] border-solid px-3 dark:border-white/30">
-          <table className="w-full text-left text-sm text-gray-500 rtl:text-right dark:text-gray-400">
+          <table className="w-full text-left text-sm text-gray-500 dark:text-gray-400 rtl:text-right">
             <tbody>
               <tr className="border-b dark:border-gray-700">
-                <td className=" py-4">Contact</td>
+                <td className=" py-4">Contacto</td>
                 <th
                   scope="row"
                   className="break-all px-6 py-4 font-medium text-gray-900 dark:text-white"
@@ -58,12 +60,12 @@ export default function ShippingMethod({
                     href="/checkout/information"
                     className="font-medium text-purple-600 hover:underline dark:text-purple-500"
                   >
-                    Change
+                    Cambiar
                   </Link>
                 </td>
               </tr>
               <tr className="border-b dark:border-gray-700">
-                <td className=" py-4">Ship to</td>
+                <td className=" py-4">Enviar a</td>
                 <th
                   scope="row"
                   className="break-all px-6 py-4 font-medium text-gray-900 dark:text-white"
@@ -77,7 +79,7 @@ export default function ShippingMethod({
                     href="/checkout/information"
                     className="font-medium text-purple-600 hover:underline dark:text-purple-500"
                   >
-                    Change
+                    Cambiar
                   </Link>
                 </td>
               </tr>
@@ -88,7 +90,7 @@ export default function ShippingMethod({
       <div className="w-full">
         <form action={formAction}>
           <div className="flex flex-col gap-5">
-            <h1 className="text-2xl font-bold ">Shipping method</h1>
+            <h1 className="text-2xl font-bold ">Método de envío</h1>
             {isArray(getshippingMethods) && (
               <RadioGroup label="" defaultValue={state?.shippingmethd} name="shippingMethod">
                 {getshippingMethods.map((method: any) => (
@@ -110,11 +112,11 @@ export default function ShippingMethod({
             <button className="flex items-center text-purple-600">
               <RightArrowIcon className="" />
               <Link href="/checkout/information" className=" mx-1 text-sm">
-                Return to information
+                Volver a información
               </Link>
             </button>
             <div className="w-full sm:w-2/5 ">
-              <ProceedToCheckout buttonName="Continue to payment" />
+              <ProceedToCheckout buttonName="Continuar a pago" />
             </div>
           </div>
         </form>
