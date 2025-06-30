@@ -9,7 +9,7 @@ interface ContextProps {
 
 const GlobalContext = createContext<ContextProps>({
   countryCode: '',
-  setCountryCode: (): string => ''
+  setCountryCode: () => {}
 });
 
 export const GlobalContextProvider = ({ children }: { children: React.ReactNode }) => {

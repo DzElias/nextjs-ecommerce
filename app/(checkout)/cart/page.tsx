@@ -1,6 +1,5 @@
-import EmptyCartPage from 'components/checkout/cart/empty-cart';
-const CartPage = () => {
-  return <EmptyCartPage />;
-};
+import { redirect } from 'next/navigation';
 
-export default CartPage;
+export default function CartPage() {
+  redirect('/');
+}
