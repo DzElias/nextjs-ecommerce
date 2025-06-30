@@ -2,110 +2,85 @@
 import { Checkbox } from '@nextui-org/react';
 import type { CountryArrayDataType } from 'lib/bagisto/types';
 import { createCheckoutProceess, setLocalStorage } from 'lib/utils';
-import { redirect } from 'next/navigation';
+import { useRouter } from 'next/navigation'; // Import useRouter
 import { useEffect } from 'react';
 import { useFormState } from 'react-dom';
 import { getLocalStorage } from '../../../lib/utils';
 import { createCheckoutAddress } from '../action';
-import InputText from '../cart/input';
+// InputText, RegionDropDown, Selectbox will be used by subcomponents
 import { ProceedToCheckout } from '../cart/proceed-to-checkout';
-import RegionDropDown from '../region-drop-down';
-import Selectbox from '../select-box';
+import ContactSection from './ContactSection'; // Import ContactSection
+import ShippingAddressSection from './ShippingAddressSection'; // Import ShippingAddressSection
+import { GuestCheckoutFormState } from 'lib/types/checkout'; // Import the new state type
+import { updateCheckoutDataInLocalStorage } from 'lib/utils'; // Import new localStorage function
 
 const GuestCheckOutForm = ({ countries }: { countries: CountryArrayDataType[] }) => {
-  const values = getLocalStorage('shippingAddress', true);
-  const initialState = {
-    ...values?.shipping
+  const router = useRouter(); // Initialize useRouter
+
+  // Lectura inicial de localStorage para 'checkout_data' o 'shippingAddress'
+  // Para mantener la compatibilidad con el `initialState` que espera campos individuales,
+  // podríamos leer el `shippingAddress` de `checkout_data` si existe.
+  const initialCheckoutData = getLocalStorage('checkout_data', true) as Partial<GuestCheckoutFormState> | null;
+  const initialShippingValues = initialCheckoutData?.shippingAddress || getLocalStorage('shippingAddress', true) || {};
+
+  const initialState: GuestCheckoutFormState = {
+    email: initialShippingValues.email || '',
+    country: initialShippingValues.country || '',
+    firstName: initialShippingValues.firstName || '',
+    lastName: initialShippingValues.lastName || '',
+    address1: initialShippingValues.address1 || '',
+    address2: initialShippingValues.address2 || '',
+    phone: initialShippingValues.phone || '',
+    city: initialShippingValues.city || '',
+    state: initialShippingValues.state || '',
+    postcode: initialShippingValues.postcode || '',
+    errors: undefined,
+    shippingAddress: null, // Initialize as null
+    success: undefined,
+    message: undefined
   };
-  const [state, formAction] = useFormState(createCheckoutAddress, initialState);
+
+  const [state, formAction] = useFormState<GuestCheckoutFormState, FormData>(createCheckoutAddress, initialState);
+
   useEffect(() => {
-    if (state?.shippingAddress) {
-      createCheckoutProceess(state);
-      setLocalStorage('shippingAddress', state?.shippingAddress);
-      redirect('/checkout/shipping');
+    // state.shippingAddress es la dirección validada devuelta por la server action
+    if (state.success && state.shippingAddress) {
+      // Actualizamos el objeto 'checkout_data' en localStorage con la nueva dirección de envío.
+      // La server action `createCheckoutAddress` debería devolver un objeto que contenga `shippingAddress`.
+      updateCheckoutDataInLocalStorage({ shippingAddress: state.shippingAddress });
+
+      // Eliminamos la clave antigua 'shippingAddress' si existía, para evitar redundancia.
+      removeFromLocalStorage('shippingAddress');
+
+      router.push('/checkout/shipping');
     }
-  }, [state]);
+    // Podríamos manejar state.errors aquí para mostrar un toast global o algo similar
+  }, [state, router]);
 
   return (
     <form action={formAction} className="my-5">
-      <div className="flex flex-col gap-3">
-        <h1 className="text-2xl font-bold">Contacto</h1>
-        <InputText
-          className="max-w-full"
-          name="email"
-          defaultValue={state.email}
-          errorMsg={state?.errors?.email?.join(', ')}
-          label="Ingrese Email"
-        />
-        <Checkbox defaultSelected className="" color="primary">
-          <span className="text-neutral-400 dark:text-white">Envíame noticias y ofertas</span>
-        </Checkbox>
-      </div>
-      <div className="my-7 grid grid-cols-6 gap-4">
-        <h1 className="col-span-6 text-2xl font-bold ">Dirección de envío</h1>
-        <Selectbox
-          countries={countries}
-          className="col-span-6"
-          nameAttr="country"
-          defaultvalue={state?.country}
-          errorMsg={state?.errors?.country?.join(', ')}
-          label="País/Región"
-        />
-        <InputText
-          className="col-span-3"
-          name="firstName"
-          defaultValue={state.firstName}
-          errorMsg={state?.errors?.firstName?.join(', ')}
-          label="Nombre"
-        />
-        <InputText
-          className="col-span-3"
-          name="lastName"
-          defaultValue={state.lastName}
-          label="Apellido"
-        />
-        <InputText
-          className="col-span-6"
-          name="address1"
-          label="Dirección"
-          defaultValue={state.address1}
-          errorMsg={state?.errors?.address1?.join(', ')}
-        />
-        <InputText
-          className="col-span-6"
-          name="address2"
-          label="Apartamento, suite, etc. (opcional)"
-        />
-        <InputText
-          className="col-span-6"
-          name="phone"
-          label="Teléfono"
-          defaultValue={state.phone}
-          errorMsg={state?.errors?.phone?.join(', ')}
-        />
-        <InputText
-          className="col-span-6 sm:col-span-2"
-          name="city"
-          label="Ciudad"
-          defaultValue={state.city}
-          errorMsg={state?.errors?.city?.join(', ')}
-        />
-        <RegionDropDown
-          countries={countries}
-          errorMsg={state?.errors?.state?.join(', ')}
-          defaultValue={state?.state}
-          className="col-span-3 sm:col-span-2"
-          label="Estado"
-        />
-        <InputText
-          className="col-span-3 sm:col-span-2"
-          name="postcode"
-          defaultValue={state.postcode}
-          label="Código Postal"
-          errorMsg={state?.errors?.postcode?.join(', ')}
-        />
+      <ContactSection email={state.email} emailErrorMsg={state.errors?.email?.join(', ')} />
 
-        <Checkbox className="col-span-6" color="primary">
+      <ShippingAddressSection
+        countries={countries}
+        defaultValues={{
+          country: state.country || initialState.country,
+          firstName: state.firstName || initialState.firstName,
+          lastName: state.lastName || initialState.lastName,
+          address1: state.address1 || initialState.address1,
+          address2: state.address2 || initialState.address2,
+          phone: state.phone || initialState.phone,
+          city: state.city || initialState.city,
+          state: state.state || initialState.state,
+          postcode: state.postcode || initialState.postcode
+        }}
+        errors={state.errors}
+      />
+
+      {/* Checkbox for saving info and ProceedToCheckout button remain here */}
+      <div className="my-7 grid grid-cols-6 gap-4">
+        <Checkbox className="col-span-6" color="primary" name="saveInformation">
+          {/* It's good practice to add a 'name' to the checkbox if its value is relevant for form submission */}
           <span className="text-neutral-400 dark:text-white">
             Guardar esta información para la próxima vez
           </span>

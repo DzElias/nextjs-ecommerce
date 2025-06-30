@@ -1,21 +1,26 @@
 'use client';
 
-import { Divider } from '@nextui-org/react';
-import { DeleteItemButton } from 'components/cart/delete-item-button';
-import { EditItemQuantityButton } from 'components/cart/edit-item-quantity-button';
-import { formatPrice } from 'lib/utils';
-import Image from 'next/image';
+// Removed Divider, DeleteItemButton, EditItemQuantityButton, formatPrice, Image imports as they are now in subcomponents
+import { Cart, CartItem } from 'lib/types/cart'; // Import Cart and CartItem types
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import CartItemDisplay from './CartItemDisplay'; // Import CartItemDisplay
+import CartSummary from './CartSummary'; // Import CartSummary
 
-export default function CartClient({ initialCart }: { initialCart: any }) {
-  const [cart, setCart] = useState<any>(initialCart);
-  const [loading, setLoading] = useState(false);
+export default function CartClient({ initialCart }: { initialCart: Cart | null | undefined }) {
+  const [cart, setCart] = useState<Cart | null | undefined>(initialCart);
+  const [loading, setLoading] = useState(false); // Keep loading state for now
   const router = useRouter();
 
   useEffect(() => {
     setCart(initialCart);
   }, [initialCart]);
+
+  // Initial loading state could be true if initialCart is not yet loaded by parent
+  // Or, if initialCart is passed, but we want to show a brief loading for UI consistency
+  // For now, this loading state seems to be for internal operations if any were added.
+  // If initialCart is guaranteed to be loaded by the parent, this loading might be removable
+  // or used for actions within this component (e.g., during quantity updates if they were handled here).
 
   if (loading) {
     return (
@@ -86,94 +91,13 @@ export default function CartClient({ initialCart }: { initialCart: any }) {
         </div>
 
         <div className="mt-6 space-y-6">
-          {cart.lines.map((item: any) => (
-            <div key={item.id} className="flex gap-4">
-              <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
-                {item.product.images && item.product.images.length > 0 ? (
-                  <Image
-                    src={item.product.images[0].url || '/placeholder.svg'}
-                    alt={item.name}
-                    fill
-                    className="object-cover object-center"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-400">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      className="h-8 w-8"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
-                      />
-                    </svg>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex flex-1 flex-col">
-                <div className="flex justify-between">
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-700">{item.name}</h3>
-                    <p className="mt-1 text-xs text-gray-500">Cantidad: {item.quantity}</p>
-                  </div>
-                  <p className="text-sm font-medium text-purple-700">
-                    {item.formattedPrice?.total || formatPrice(item.total)}
-                  </p>
-                </div>
-
-                <div className="mt-2 flex items-center justify-between">
-                  <div className="flex items-center rounded-full border border-gray-200">
-                    <EditItemQuantityButton item={item} type="minus" />
-                    <p className="w-6 text-center text-sm">{item.quantity}</p>
-                    <EditItemQuantityButton item={item} type="plus" />
-                  </div>
-                  <DeleteItemButton item={item} />
-                </div>
-              </div>
-            </div>
+          {cart.lines.map((item: CartItem) => (
+            <CartItemDisplay key={item.id} item={item} />
           ))}
         </div>
       </div>
 
-      <div className="mt-8">
-        <Divider className="my-4" />
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <p className="text-sm text-gray-600">Subtotal</p>
-            <p className="text-sm font-medium text-gray-900">
-              {cart.formattedPrice?.subTotal || formatPrice(cart.subTotal)}
-            </p>
-          </div>
-
-          {Number(cart.discountAmount) > 0 && (
-            <div className="flex justify-between">
-              <p className="text-sm text-gray-600">Descuento</p>
-              <p className="text-sm font-medium text-green-600">
-                -{cart.formattedPrice?.discount || formatPrice(cart.discountAmount)}
-              </p>
-            </div>
-          )}
-          <div className="flex justify-between">
-            <p className="text-sm text-gray-600">Impuestos</p>
-            <p className="text-sm font-medium text-gray-900">
-              {cart.formattedPrice?.taxTotal || formatPrice(cart.taxTotal)}
-            </p>
-          </div>
-          <Divider className="my-2" />
-          <div className="flex justify-between">
-            <p className="text-base font-medium text-gray-900">Total</p>
-            <p className="text-base font-medium text-purple-700">
-              {cart.formattedPrice?.grandTotal || formatPrice(cart.grandTotal)}
-            </p>
-          </div>
-        </div>
-      </div>
+      <CartSummary cart={cart} />
     </div>
   );
 }
