@@ -84,11 +84,16 @@ export async function bagistoFetch<T>({
       bagistoCartId = cookies().get('bagisto_session')?.value;
     }
 
+    console.log(`[bagistoFetch] Endpoint: ${endpoint}, Query: ${query.substring(0, 100)}...`);
+    // const ключевые_переменные_de_entorno = { BAGISTO_STORE_DOMAIN: process.env.BAGISTO_STORE_DOMAIN };
+    // console.log('[bagistoFetch] Environment being used for domain:', ключевые_переменные_de_entorno);
+
+
     const result = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // 'X-Bagisto-Storefront-Access-Token': key,
+        // 'X-Bagisto-Storefront-Access-Token': key, // Asegúrate que `key` (process.env.BAGISTO_STOREFRONT_ACCESS_TOKEN) esté definida si la API lo requiere.
         Cookie: `${bagistoCartId ? `bagisto_session=${bagistoCartId}` : ''}`,
         ...headers
       },
@@ -100,29 +105,71 @@ export async function bagistoFetch<T>({
       ...(tags && { next: { tags } })
     });
 
-    const body = await result.json();
+    const responseText = await result.text(); // Leer como texto para depuración robusta
+    console.log(`[bagistoFetch] Status for ${query.substring(0, 50)}: ${result.status}`);
+    // Descomenta la siguiente línea con precaución, puede ser muy verboso:
+    // console.log(`[bagistoFetch] Raw response for ${query.substring(0,50)}: ${responseText}`);
+
+    if (!result.ok) {
+      console.error(`[bagistoFetch] HTTP Error! Status: ${result.status}, Query: ${query.substring(0, 100)}`, responseText);
+      throw {
+        status: result.status,
+        message: `HTTP error ${result.status}. Response: ${responseText.substring(0, 200)}`,
+        query,
+        responseText
+      };
+    }
+
+    let body;
+    try {
+      body = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error(`[bagistoFetch] Failed to parse API response as JSON. Query: ${query.substring(0, 100)}`, parseError, responseText);
+      throw {
+        error: parseError,
+        message: 'Failed to parse API response as JSON.',
+        query,
+        responseText
+      };
+    }
+
+    // Descomenta para logueo detallado del cuerpo parseado:
+    // console.log(`[bagistoFetch] Parsed Body for ${query.substring(0,50)}:`, JSON.stringify(body, null, 2));
 
     if (body.errors) {
-      throw body.errors[0];
+      console.error(`[bagistoFetch] GraphQL Errors. Query: ${query.substring(0, 100)}:`, body.errors);
+      throw body.errors[0]; // Lanza el primer error de GraphQL para ser atrapado por el catch externo
     }
+
+    // Específicamente para getChannelQuery, si no hay errores pero 'data' o 'getDefaultChannel' falta.
+    if (query.includes('getDefaultChannel') && (!body.data || typeof body.data.getDefaultChannel === 'undefined')) {
+        console.warn(`[bagistoFetch] Warning: body.data or body.data.getDefaultChannel is undefined for getChannelQuery. Body:`, JSON.stringify(body, null, 2));
+        // No lanzamos error aquí, dejaremos que getChennel decida si es un error fatal o puede devolver null.
+        // Pero el log es importante.
+    }
+
 
     return {
       status: result.status,
       body
     };
-  } catch (e) {
-    if (isBagistoError(e)) {
-      throw {
-        cause: e.cause?.toString() || 'unknown',
-        status: e.status || 500,
-        message: e.message,
-        query
-      };
+  } catch (e: any) { // Tipar 'e' como any para acceder a sus propiedades de forma segura
+    // Este catch ahora atrapará errores de red, errores de parseo de JSON, errores HTTP no-ok, y errores GraphQL.
+    console.error(`[bagistoFetch] Error caught. Query: ${query.substring(0,100)}. Error:`, e.message, e);
+
+    // Re-lanzar un error consistente o el mismo error si ya tiene la estructura deseada.
+    // Si 'e' es un error de GraphQL (ya tiene message, etc.), simplemente lo re-lanzamos.
+    // Si es un error que construimos (HTTP no-ok, parse error), también lo re-lanzamos.
+    // Si es un error de red genérico, lo envolvemos.
+    if (e.message && (e.status || e.cause || e.query)) { // Si ya es uno de nuestros errores formateados o un error GraphQL
+        throw e;
     }
 
     throw {
-      error: e,
-      query
+      error: e, // El error original
+      message: e.message || 'Unknown error in bagistoFetch',
+      query,
+      status: e.status // Puede que no exista para errores de red puros
     };
   }
 }
@@ -229,12 +276,45 @@ export async function createCart(): Promise<Cart> {
   return reshapeCart(res.body.data.cartCreate.cart);
 }
 
-export async function getChennel(): Promise<ChannelType> {
-  const res = await bagistoFetch<BagistoChannelOperation>({
-    query: getChannelQuery,
-    cache: 'no-store'
-  });
-  return res.body.data.getDefaultChannel;
+export async function getChennel(): Promise<ChannelType | null> {
+  try {
+    const res = await bagistoFetch<BagistoChannelOperation>({
+      query: getChannelQuery,
+      cache: 'no-store'
+      // No tags estaban definidos, pero si esta data es crítica para todas las páginas,
+      // y no cambia frecuentemente, 'force-cache' con revalidación por tiempo o tag podría ser una opción.
+      // Por ahora, se mantiene 'no-store' según el código original.
+    });
+
+    // Chequeo robusto de la respuesta
+    if (res.status !== 200) {
+      console.error(`HTTP error fetching channel! Status: ${res.status}`, res.body);
+      // Considerar si se debe lanzar un error o devolver null/valor por defecto
+      // Si el canal es absolutamente necesario para el layout, lanzar un error podría ser apropiado.
+      // throw new Error(`Failed to fetch default channel. HTTP Status: ${res.status}`);
+      return null; // Devolver null para que el layout pueda manejarlo
+    }
+
+    // `bagistoFetch` ahora es más robusto y debería lanzar errores si la petición falla (HTTP no-ok, no JSON, errores GraphQL).
+    // `bagistoFetch` ahora es más robusto y debería lanzar errores si la petición falla (HTTP no-ok, no JSON, errores GraphQL).
+    // Si llegamos aquí, `res` debería ser una respuesta exitosa y `res.body` no debería tener `errors`.
+    // La principal preocupación es si `res.body.data` o `res.body.data.getDefaultChannel` existen.
+
+    // Usar encadenamiento opcional para la validación de la estructura profunda
+    if (res?.body?.data?.getDefaultChannel) {
+      console.log('[getChennel] Successfully fetched and getDefaultChannel is present.');
+      return res.body.data.getDefaultChannel;
+    } else {
+      // Loguear si la estructura no es la esperada, incluso si no hubo error en bagistoFetch.
+      // Esto cubre el caso donde la API devuelve 200 OK, sin `errors`, pero el campo `data` o `getDefaultChannel` falta.
+      console.warn('[getChennel] getDefaultChannel data is missing, null, or structure is not as expected. Response body:', JSON.stringify(res?.body, null, 2));
+      return null;
+    }
+  } catch (error) {
+    // Este catch se activará si `bagistoFetch` lanza un error (HTTP no-ok, error de red, error de parseo, error GraphQL).
+    console.error('[getChennel] Error fetching channel information:', error);
+    return null; // Devolver null para que el layout pueda manejar un estado sin canal.
+  }
 }
 
 export async function addToCart(input: {
